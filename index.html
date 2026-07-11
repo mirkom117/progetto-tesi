@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Blockchain Dashboard — Tesi</title>
+    <meta name="description"
+        content="Dashboard decentralizzata per certificazione dati multimetro su blockchain Ethereum con memoizzazione smart contract">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #253348;
+            --bg-input: #0f172a;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-blue-glow: rgba(59, 130, 246, 0.25);
+            --accent-green: #10b981;
+            --accent-green-glow: rgba(16, 185, 129, 0.15);
+            --accent-yellow: #f59e0b;
+            --accent-yellow-glow: rgba(245, 158, 11, 0.15);
+            --accent-red: #ef4444;
+            --accent-red-glow: rgba(239, 68, 68, 0.2);
+            --border: #334155;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 32px;
+        }
+
+        /* ── Header ── */
+        .app-header {
+            text-align: center;
+            padding: 24px 0 8px;
+        }
+
+        .app-header h1 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--accent-blue), #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .app-header p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            animation: fadeInUp 0.4s ease both;
+        }
+
+        .card:nth-child(2) {
+            animation-delay: 0.05s;
+        }
+
+        .card:nth-child(3) {
+            animation-delay: 0.1s;
+        }
+
+        .card:nth-child(4) {
+            animation-delay: 0.15s;
+        }
+
+        .card:nth-child(5) {
+            animation-delay: 0.2s;
+        }
+
+        .card:nth-child(6) {
+            animation-delay: 0.25s;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+
+        .wallet-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .wallet-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.2rem;
+        }
+
+        .wallet-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .wallet-info .status-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .wallet-info .address {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wallet-info .address.connected {
+            color: var(--accent-green);
+        }
+
+
+        .device-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .device-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent-blue), #06b6d4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            animation: pulse 2.5s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 var(--accent-blue-glow);
+            }
+
+            50% {
+                box-shadow: 0 0 0 10px transparent;
+            }
+        }
+
+        .device-meta {
+            flex: 1;
+        }
+
+        .device-meta .device-name {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .device-meta .device-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .device-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--accent-green);
+            margin-top: 3px;
+        }
+
+        .device-status .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: blink 1.8s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+
+        .json-box {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            line-height: 1.65;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .json-box .key {
+            color: #818cf8;
+        }
+
+        .json-box .string {
+            color: #34d399;
+        }
+
+        .json-box .number {
+            color: #fbbf24;
+        }
+
+
+        .memo-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 14px;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .memo-bar .label {
+            font-size: 0.73rem;
+            color: var(--text-muted);
+        }
+
+        .memo-bar .counter {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--accent-yellow);
+        }
+
+        .memo-bar .counter.duplicate {
+            color: var(--accent-red);
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20% {
+                transform: translateX(-4px);
+            }
+
+            40% {
+                transform: translateX(4px);
+            }
+
+            60% {
+                transform: translateX(-3px);
+            }
+
+            80% {
+                transform: translateX(3px);
+            }
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            letter-spacing: -0.01em;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), #6366f1);
+            color: #fff;
+            box-shadow: 0 2px 12px var(--accent-blue-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 4px 20px var(--accent-blue-glow);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #059669, var(--accent-green));
+            color: #fff;
+            box-shadow: 0 2px 12px var(--accent-green-glow);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            box-shadow: 0 4px 20px var(--accent-green-glow);
+        }
+
+        .btn-connect {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            color: #fff;
+            box-shadow: 0 2px 12px rgba(124, 58, 237, 0.25);
+        }
+
+        .btn-connect:hover:not(:disabled) {
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35);
+        }
+
+        .btn-connect.connected {
+            background: var(--bg-input);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            box-shadow: none;
+        }
+
+
+        .fault-alert {
+            display: block;
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin-top: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .fault-alert.ok {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.05));
+            border: 1px solid var(--accent-green);
+        }
+
+        .fault-alert.ok .title {
+            color: var(--accent-green);
+        }
+
+        .fault-alert.ok .detail {
+            color: #6ee7b7;
+        }
+
+        .fault-alert.error {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.05));
+            border: 1px solid var(--accent-red);
+            animation: shake 0.5s ease;
+        }
+
+        .fault-alert.error .title {
+            color: var(--accent-red);
+        }
+
+        .fault-alert.error .detail {
+            color: #fca5a5;
+        }
+
+        .fault-alert-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .fault-alert-header .icon {
+            font-size: 1.3rem;
+        }
+
+        .fault-alert-header .title {
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .fault-alert .detail {
+            font-size: 0.8rem;
+            line-height: 1.5;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .log-section {
+            animation-delay: 0.3s;
+        }
+
+        .log-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .log-header .title {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .log-header .clear-btn {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all var(--transition);
+        }
+
+        .log-header .clear-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--text-muted);
+        }
+
+        #log {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            line-height: 1.7;
+            max-height: 320px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        #log::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        #log::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #log::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry .timestamp {
+            color: var(--text-muted);
+            margin-right: 6px;
+        }
+
+        .log-entry.success {
+            color: var(--accent-green);
+        }
+
+        .log-entry.cache {
+            color: var(--accent-yellow);
+        }
+
+        .log-entry.error {
+            color: var(--accent-red);
+        }
+
+        .log-entry.info {
+            color: var(--text-secondary);
+        }
+
+        .gas-compare {
+            display: block;
+            margin-top: 14px;
+            padding: 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+        }
+
+        .gas-compare.visible {
+            display: block;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .gas-compare .gas-title {
+            font-size: 0.73rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+        }
+
+        .gas-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+        }
+
+        .gas-row .label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .gas-row .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .gas-row .value.green {
+            color: var(--accent-green);
+        }
+
+        .gas-row .value.yellow {
+            color: var(--accent-yellow);
+        }
+
+        .gas-row .value.blue {
+            color: var(--accent-blue);
+        }
+
+        .gas-bar-track {
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .gas-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-yellow));
+            transition: width 0.6s ease;
+        }
+
+        @media (min-width: 600px) {
+            body {
+                padding: 32px;
+            }
+
+            .app {
+                max-width: 520px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <header class="app-header">
+            <h1>IoT Blockchain Dashboard</h1>
+            <p>Certificazione &amp; Memoizzazione On-Chain</p>
+        </header>
+
+        <!-- Wallet Connection -->
+        <div class="card">
+            <div class="wallet-card">
+                <div class="wallet-icon">🔐</div>
+                <div class="wallet-info">
+                    <div class="status-label">Wallet Ethereum</div>
+                    <div class="address" id="walletAddress">Non connesso</div>
+                </div>
+            </div>
+            <button class="btn btn-connect" id="btnConnect" style="margin-top: 14px;">
+                Connetti MetaMask
+            </button>
+        </div>
+
+        <!-- Device Card -->
+        <div class="card">
+            <div class="card-label">Dispositivo IoT</div>
+            <div class="device-header">
+                <div class="device-icon">⚡</div>
+                <div class="device-meta">
+                    <div class="device-name">Multimetro Digitale</div>
+                    <div class="device-id">ID: 48CA4339DA84</div>
+                    <div class="device-status">
+                        <span class="dot"></span> Simulazione attiva
+                    </div>
+                </div>
+            </div>
+            <div class="card-label" style="margin-bottom: 8px;">Dati Generati (JSON)</div>
+            <div class="json-box" id="jsonPreview">
+                {
+                <span class="key">"deviceId"</span>: <span class="string">"—"</span>,
+                <span class="key">"timestamp"</span>: <span class="number">—</span>,
+                <span class="key">"tensione"</span>: <span class="number">— V</span>,
+                <span class="key">"armoniche"</span>: {
+                <span class="key">"THD"</span>: <span class="number">—%</span>
+                }
+                }
+                <span style="color: var(--text-muted);">// Clicca "Simula Invio" per generare</span>
+            </div>
+            <div class="memo-bar">
+                <span class="label">Ciclo Memoizzazione</span>
+                <span class="counter" id="memoCounter">0 / 3</span>
+            </div>
+        </div>
+
+        <!-- Fase 1: Simulate + Certify -->
+        <div class="card">
+            <div class="card-label">Fase 1 — Oracle Pattern</div>
+            <div class="card-title">Simula Invio Dati</div>
+            <div class="card-desc">
+                Genera dati randomici dal multimetro e registra l'Hash sulla blockchain.
+                Ogni 3 invii, reinvia dati identici per testare la prevenzione duplicati.
+            </div>
+            <label
+                style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-top: 14px;">
+                <input type="checkbox" id="checkForzaGuasto"> 🚨 Forza anomalia armoniche (THD > 8%)
+            </label>
+            <button class="btn btn-primary" id="btnSimula" style="margin-top: 10px;" disabled>
+                ⚡ Simula Invio Dati
+            </button>
+        </div>
+
+        <!-- Fase 2: Elaborazione Media -->
+        <div class="card">
+            <div class="card-label">Fase 2 — Memoization & Pattern Push</div>
+            <div class="card-title">Elaborazione Media Tensione</div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 14px;">
+                
+                <!-- Colonna Sinistra: Sincrono -->
+                <div style="border-right: 1px solid var(--border); padding-right: 24px;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: var(--accent-blue); display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 1.2rem;">👤</span> Push Sincrono (Manuale)
+                    </div>
+                    <div class="card-desc" style="margin-bottom: 14px; min-height: 40px;">
+                        L'utente richiede il calcolo esplicitamente cliccando il pulsante.
+                    </div>
+                    <button class="btn btn-secondary" id="btnElabora" disabled style="width: 100%;">
+                        📊 Calcola Media (Sync)
+                    </button>
+                    <!-- Risultato On-Chain Sync -->
+                    <div id="resultBoxSync" style="display: none; margin-top: 14px; padding: 14px; background: var(--bg-input); border: 1px solid var(--accent-green); border-radius: var(--radius-sm); animation: fadeInUp 0.3s ease;">
+                        <div style="font-size: 0.73rem; color: var(--accent-green); text-transform: uppercase; font-weight: 600; margin-bottom: 6px;">Output (Media)</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;" id="resultMediaSync">—</div>
+                    </div>
+
+                    <!-- Gas Comparison Widget Sync -->
+                    <div class="gas-compare" id="gasCompareSync" style="margin-top: 14px;">
+                        <div class="gas-title">⛽ Confronto Gas (Sync)</div>
+                        <div class="gas-row">
+                            <span class="label">Primo calcolo</span>
+                            <span class="value green" id="gasFirstSync">—</span>
+                        </div>
+                        <div class="gas-row">
+                            <span class="label">Da cache</span>
+                            <span class="value yellow" id="gasCacheSync">—</span>
+                        </div>
+                        <div class="gas-row">
+                            <span class="label">Risparmio</span>
+                            <span class="value blue" id="gasSavedSync">—</span>
+                        </div>
+                        <div class="gas-bar-track">
+                            <div class="gas-bar-fill" id="gasBarSync" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Colonna Destra: Asincrono -->
+                <div>
+                    <div style="font-weight: 600; margin-bottom: 8px; color: var(--accent-purple); display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 1.2rem;">⚡</span> Push Asincrono (Automatico)
+                    </div>
+                    <div class="card-desc" style="margin-bottom: 14px; min-height: 40px;">
+                        Ascolto eventi. Calcolo innescato in automatico dal sistema appena un nuovo hash viene certificato.
+                    </div>
+                    
+                    <label style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-bottom: 12px; background: var(--bg-input); padding: 8px 12px; border-radius: var(--radius-sm); border: 1px dashed var(--border);">
+                        <input type="checkbox" id="checkAsyncMode"> Abilita Auto-Elaborazione
+                    </label>
+
+                    <div id="asyncStatusBox" style="padding: 14px; text-align: center; color: var(--text-muted);">
+                        <div id="asyncStatusIcon" style="font-size: 1.5rem; margin-bottom: 8px; opacity: 0.5;">⏸️</div>
+                        <div id="asyncStatusText" style="font-size: 0.85rem;">Auto-elaborazione disabilitata.</div>
+                    </div>
+
+                    <!-- Risultato On-Chain Async -->
+                    <div id="resultBoxAsync" style="display: none; margin-top: 14px; padding: 14px; background: var(--bg-input); border: 1px solid var(--accent-purple); border-radius: var(--radius-sm); animation: fadeInUp 0.3s ease;">
+                        <div style="font-size: 0.73rem; color: var(--accent-purple); text-transform: uppercase; font-weight: 600; margin-bottom: 6px;">Elaborato in Auto (Media)</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;" id="resultMediaAsync">—</div>
+                    </div>
+
+                    <!-- Gas Comparison Widget Async -->
+                    <div class="gas-compare" id="gasCompareAsync" style="margin-top: 14px;">
+                        <div class="gas-title">⛽ Confronto Gas (Async)</div>
+                        <div class="gas-row">
+                            <span class="label">Primo calcolo</span>
+                            <span class="value green" id="gasFirstAsync">—</span>
+                        </div>
+                        <div class="gas-row">
+                            <span class="label">Da cache</span>
+                            <span class="value yellow" id="gasCacheAsync">—</span>
+                        </div>
+                        <div class="gas-row">
+                            <span class="label">Risparmio</span>
+                            <span class="value blue" id="gasSavedAsync">—</span>
+                        </div>
+                        <div class="gas-bar-track">
+                            <div class="gas-bar-fill" id="gasBarAsync" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Fault Alert -->
+        <div class="fault-alert ok" id="faultAlert">
+            <div class="fault-alert-header">
+                <span class="icon" id="faultIcon">✅</span>
+                <span class="title" id="faultTitle">STATO MOTORE: NORMALE</span>
+            </div>
+            <div class="detail" id="faultDetail">
+                In attesa di elaborazione on-chain...
+            </div>
+        </div>
+
+        <!-- Cooldown Allarme Control -->
+        <div class="card">
+            <div class="card-label">Impostazioni Allarme</div>
+            <div class="card-title">Cooldown Anti-Aliasing</div>
+            <div class="card-desc" style="margin-bottom: 14px;">
+                Durata in secondi entro cui un allarme non viene ri-emesso per lo stesso dispositivo.
+                Valore <strong>0</strong> = cooldown disabilitato (ogni anomalia genera un allarme).
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="number" id="inputCooldown" min="0" value="0" placeholder="Secondi"
+                    style="flex: 1; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; outline: none; transition: border-color var(--transition);"
+                    onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border)'">
+                <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">sec</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 12px;">
+                <button class="btn btn-primary" id="btnSetCooldown" disabled style="flex: 1;">
+                    🔧 Aggiorna Cooldown
+                </button>
+            </div>
+            <div id="cooldownStatus" style="margin-top: 10px; font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; color: var(--text-muted);">
+                Valore attuale on-chain: <span id="cooldownCurrentValue" style="color: var(--accent-yellow); font-weight: 600;">—</span>
+            </div>
+        </div>
+
+        <!-- Log Console -->
+        <div class="card log-section">
+            <div class="log-header">
+                <span class="title">📋 Console di Log</span>
+                <button class="clear-btn" id="btnClearLog">Pulisci</button>
+            </div>
+            <div id="log">
+                <div class="log-entry info"><span class="timestamp">[--:--:--]</span> Sistema pronto. Connetti MetaMask
+                    per iniziare.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        //  CONFIGURAZIONE CONTRATTI
+
+        const addressCertificatore = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+        const addressElaboratore = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+
+        const abiCertificatore = [
+    {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "DispositivoNonAutorizzato",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "HashGiaCertificato",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "SoloOwner",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "bytes12",
+                "name": "deviceId",
+                "type": "bytes12"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "timestamp",
+                "type": "uint256"
+            },
+            {
+                "indexed": true,
+                "internalType": "bytes32",
+                "name": "fileHash",
+                "type": "bytes32"
+            }
+        ],
+        "name": "DatoCertificato",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_dispositivo",
+                "type": "address"
+            }
+        ],
+        "name": "autorizzaDispositivo",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "autorizzati",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes12",
+                "name": "_deviceId",
+                "type": "bytes12"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_timestamp",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "_fileHash",
+                "type": "bytes32"
+            }
+        ],
+        "name": "certificaRilevazione",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "hashEsistenti",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_dispositivo",
+                "type": "address"
+            }
+        ],
+        "name": "revocaDispositivo",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+];
+
+        const abiElaboratore = [
+    {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "ArrayTensioniVuoto",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "SoloOwner",
+        "type": "error"
+    },
+    {
+        "inputs": [],
+        "name": "UtenteNonAutorizzato",
+        "type": "error"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "bytes12",
+                "name": "deviceId",
+                "type": "bytes12"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "timestamp",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "thdCalcolato",
+                "type": "uint256"
+            }
+        ],
+        "name": "AllarmeGuasto",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "bytes12",
+                "name": "deviceId",
+                "type": "bytes12"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "timestamp",
+                "type": "uint256"
+            }
+        ],
+        "name": "AllarmeReset",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "bytes32",
+                "name": "fileHash",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "risultatoMedia",
+                "type": "uint256"
+            }
+        ],
+        "name": "CalcoloEseguito",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint64",
+                "name": "nuovoValore",
+                "type": "uint64"
+            }
+        ],
+        "name": "CooldownAggiornato",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "bytes32",
+                "name": "fileHash",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "risultatoMedia",
+                "type": "uint256"
+            }
+        ],
+        "name": "RisultatoRecuperatoDallaCache",
+        "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "SOGLIA_THD",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes12",
+                "name": "",
+                "type": "bytes12"
+            }
+        ],
+        "name": "allarmiAttivi",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "timestampAllarme",
+                "type": "uint64"
+            },
+            {
+                "internalType": "bool",
+                "name": "attivo",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_utente",
+                "type": "address"
+            }
+        ],
+        "name": "autorizzaUtente",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "autorizzati",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "cooldownAllarme",
+        "outputs": [
+            {
+                "internalType": "uint64",
+                "name": "",
+                "type": "uint64"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "_fileHash",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "_tensioni",
+                "type": "uint256[]"
+            }
+        ],
+        "name": "calcolaMediaTensione",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes12",
+                "name": "_deviceId",
+                "type": "bytes12"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_timestamp",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_tensioneTarget",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "_armonicheTarget",
+                "type": "uint256[]"
+            }
+        ],
+        "name": "verificaGuastiArmoniche",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "_fileHash",
+                "type": "bytes32"
+            }
+        ],
+        "name": "getCacheResult",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "esiste",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "valore",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes12",
+                "name": "_deviceId",
+                "type": "bytes12"
+            }
+        ],
+        "name": "resetAllarme",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_utente",
+                "type": "address"
+            }
+        ],
+        "name": "revocaUtente",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint64",
+                "name": "_nuovoValore",
+                "type": "uint64"
+            }
+        ],
+        "name": "setCooldownAllarme",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+];
+
+        let signer;
+        let contrattoCertificatore;
+        let contrattoElaboratore;
+
+        // Contatore simulazioni per memoizzazione
+        let simulationCount = 0;
+        // Ultimo dato generato (per reinvio duplicato)
+        let lastGeneratedData = null;
+        let lastFileHash = null;
+        // Array dati certificati con successo (per Fase 2)
+        let datiCertificati = [];
+        // Gas tracking per confronto memoizzazione
+        let firstCalcGasUsed = null;
+        // Tracking locale hash già elaborati (mirror della cache on-chain)
+        // Necessario perché Ethers v6 + Hardhat ha problemi a decodificare
+        // il ritorno di cacheRisultati() e il parseLog degli eventi
+        const hashElaborati = new Set();
+
+        const BACKEND_URL = 'http://localhost:3000/api/dati';
+
+        // Carica dati storici off-chain dal DB al caricamento
+        async function fetchDatiDaDB() {
+            try {
+                const response = await fetch(BACKEND_URL);
+                if (response.ok) {
+                    datiCertificati = await response.json();
+                    if (datiCertificati.length > 0) {
+                        logMessage(`✅ Caricati ${datiCertificati.length} dati storici off-chain dal DB.`, 'success');
+                    }
+                }
+            } catch (e) {
+                logMessage('❌ Impossibile caricare dati off-chain dal DB: assicurati che il server backend sia avviato.', 'error');
+            }
+        }
+        window.addEventListener('load', fetchDatiDaDB);
+
+        //  LOG CONSOLE
+
+        function getTimestamp() {
+            const now = new Date();
+            return `[${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}]`;
+        }
+
+        /**
+         * Aggiunge un messaggio al log con colore e auto-scroll.
+         * @param {string} msg - Il testo del messaggio
+         * @param {'info'|'success'|'cache'|'error'} type - Il tipo (determina il colore)
+         */
+        function logMessage(msg, type = 'info') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `<span class="timestamp">${getTimestamp()}</span> ${msg}`;
+            logEl.appendChild(entry);
+            // Auto-scroll verso il basso
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        document.getElementById('btnClearLog').addEventListener('click', () => {
+            const logEl = document.getElementById('log');
+            logEl.innerHTML = '';
+            logMessage('Log pulito.', 'info');
+        });
+
+        //  GENERATORE DATI RANDOMICI
+
+
+        /**
+          * Simula l'acquisizione dati dal multimetro.
+          * @param {boolean} forzaGuasto - Se true, genera armoniche altissime.
+         */
+        function generaDatiMultimetro(forzaGuasto = false) {
+            const tensione = 220 + Math.random() * 20;
+
+            let h3, h5, h7;
+
+            if (forzaGuasto) {
+                // MOTORE GUASTO: Generiamo armoniche altissime per superare sicuramente l'8%
+                h3 = 18 + Math.random() * 10; // Tra 18V e 28V
+                h5 = 12 + Math.random() * 8;  // Tra 12V e 20V
+                h7 = 8 + Math.random() * 5;   // Tra 8V e 13V
+            } else {
+                // MOTORE SANO: Armoniche molto basse (THD sicuramente < 8%)
+                h3 = Math.random() * 5; // Max 5V
+                h5 = Math.random() * 3; // Max 3V
+                h7 = Math.random() * 2; // Max 2V
+            }
+
+            const sommaQuadrati = (h3 * h3) + (h5 * h5) + (h7 * h7);
+            const simulatedThd = (Math.sqrt(sommaQuadrati) / tensione) * 100;
+
+            return {
+                deviceId: "48CA4339DA84",
+                timestamp: Math.floor(Date.now() / 1000),
+                tensione: parseFloat(tensione.toFixed(3)),
+                armoniche: {
+                    THD: parseFloat(simulatedThd.toFixed(2)),
+                    armonica_3: parseFloat(h3.toFixed(2)),
+                    armonica_5: parseFloat(h5.toFixed(2)),
+                    armonica_7: parseFloat(h7.toFixed(2))
+                }
+            };
+        }
+
+        /**
+         * Renderizza il JSON con syntax highlighting nel box preview
+         */
+        function renderJsonPreview(data) {
+            const json = JSON.stringify(data, null, 2);
+            // Syntax highlighting
+            const highlighted = json
+                .replace(/"([^"]+)":/g, '<span class="key">"$1"</span>:')
+                .replace(/: "([^"]+)"/g, ': <span class="string">"$1"</span>')
+                .replace(/: (\d+\.?\d*)/g, ': <span class="number">$1</span>');
+            document.getElementById('jsonPreview').innerHTML = highlighted;
+        }
+
+        /**
+         * Aggiorna il contatore visivo della memoizzazione
+         */
+        function updateMemoCounter(count, isDuplicate) {
+            const el = document.getElementById('memoCounter');
+            const cycle = count % 3;
+            el.textContent = isDuplicate ? '⚠ DUPLICATO' : `${cycle} / 3`;
+            el.className = isDuplicate ? 'counter duplicate' : 'counter';
+        }
+
+        //  ALERT GUASTO MOTORE (asincrono simulato)
+
+        const THD_SOGLIA = 8; // Soglia fuori norma in percentuale
+
+        function setFaultStatus(isError, thdValue = null) {
+            const alertEl = document.getElementById('faultAlert');
+            const iconEl = document.getElementById('faultIcon');
+            const titleEl = document.getElementById('faultTitle');
+            const detailEl = document.getElementById('faultDetail');
+
+            if (isError) {
+                alertEl.className = 'fault-alert error';
+                iconEl.textContent = '🚨';
+                titleEl.textContent = 'ALERT GUASTO MOTORE';
+                const percent = (thdValue / 100).toFixed(2);
+                detailEl.textContent = `THD rilevato on-chain: ${percent}% (soglia: 8.00%) — Possibile guasto motore in corso.`;
+                
+                // Trigger shake animation again
+                alertEl.style.animation = 'none';
+                alertEl.offsetHeight; // force reflow
+                alertEl.style.animation = '';
+                
+                logMessage(`⚠️ ALLARME ON-CHAIN: THD armoniche fuori norma (${percent}%)!`, 'error');
+            } else {
+                alertEl.className = 'fault-alert ok';
+                iconEl.textContent = '✅';
+                titleEl.textContent = 'STATO MOTORE: NORMALE';
+                detailEl.textContent = 'Nessuna anomalia armonica rilevata durante l\'ultima elaborazione on-chain';
+            }
+        }
+
+
+        //  CONNESSIONE METAMASK
+
+
+        document.getElementById('btnConnect').addEventListener('click', async () => {
+            if (window.ethereum) {
+                try {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    signer = await provider.getSigner();
+                    const address = await signer.getAddress();
+
+                    // Aggiorna UI wallet
+                    const addrEl = document.getElementById('walletAddress');
+                    addrEl.textContent = address;
+                    addrEl.classList.add('connected');
+
+                    const btnConnect = document.getElementById('btnConnect');
+                    btnConnect.textContent = '✓ Connesso';
+                    btnConnect.classList.add('connected');
+                    btnConnect.disabled = true;
+
+                    // Inizializza i contratti
+                    contrattoCertificatore = new ethers.Contract(addressCertificatore, abiCertificatore, signer);
+                    contrattoElaboratore = new ethers.Contract(addressElaboratore, abiElaboratore, signer);
+
+                    // Controllo cruciale: verifica se i contratti sono realmente deployati a questi indirizzi
+                    const codeCert = await provider.getCode(addressCertificatore);
+                    const codeElab = await provider.getCode(addressElaboratore);
+
+                    if (codeCert === '0x' || codeElab === '0x') {
+                        logMessage('❌ ERRORE CRITICO: Nessun contratto trovato agli indirizzi specificati!', 'error');
+                        logMessage('   Il nodo Hardhat è stato riavviato o i contratti sono stati redeployati.', 'error');
+                        logMessage('   → Esegui il deploy e aggiorna gli indirizzi in cima al file index.html.', 'error');
+                        return;
+                    }
+
+                    // Ascolta l'evento AllarmeGuasto
+                    contrattoElaboratore.on('AllarmeGuasto', (deviceId, timestamp, thdCalcolato, eventPayload) => {
+                        if (eventPayload) {
+                            const txHash = eventPayload.log ? eventPayload.log.transactionHash : eventPayload.transactionHash;
+                            if (txHash) {
+                                window.processedAlarmTxs = window.processedAlarmTxs || new Set();
+                                if (window.processedAlarmTxs.has(txHash)) return;
+                                window.processedAlarmTxs.add(txHash);
+                            }
+                        }
+                        setFaultStatus(true, Number(thdCalcolato));
+                    });
+
+                    // Ascolta l'evento DatoCertificato per l'elaborazione Asincrona
+                    contrattoCertificatore.on('DatoCertificato', async (deviceId, timestamp, fileHash, eventPayload) => {
+                        // Anti-doppia esecuzione (bug tipico di polling doppio in ethers.js/Hardhat)
+                        if (eventPayload) {
+                            const txHash = eventPayload.log ? eventPayload.log.transactionHash : eventPayload.transactionHash;
+                            if (txHash) {
+                                window.processedAsyncTxs = window.processedAsyncTxs || new Set();
+                                if (window.processedAsyncTxs.has(txHash)) return;
+                                window.processedAsyncTxs.add(txHash);
+                            }
+                        }
+
+                        const isAsyncEnabled = document.getElementById('checkAsyncMode').checked;
+                        if (!isAsyncEnabled) return;
+                        
+                        logMessage(`⚡ [ASYNC] Rilevato evento DatoCertificato! Avvio auto-elaborazione...`, 'info');
+                        // Mostra stato in caricamento
+                        document.getElementById('asyncStatusIcon').textContent = "⚙️";
+                        document.getElementById('asyncStatusText').textContent = "Elaborazione automatica in corso...";
+                        
+                        // Trova i dati associati a questo hash
+                        const dato = datiCertificati.find(d => d.fileHash === fileHash);
+                        if (!dato) {
+                            logMessage(`❌ [ASYNC] Errore: dati locali non trovati per l'hash certificato!`, 'error');
+                            document.getElementById('asyncStatusIcon').textContent = "⚠️";
+                            document.getElementById('asyncStatusText').textContent = "Errore dati locali.";
+                            return;
+                        }
+                        
+                        // L'array tensioni da inviare è l'insieme di tutti i dati registrati finora
+                        const tensioniArray = datiCertificati.map(d => Math.round(d.tensione * 100));
+                        
+                        try {
+                            const isFromCache = hashElaborati.has(fileHash);
+                            if (isFromCache) {
+                                logMessage(`⚡ [ASYNC] MEMOIZZAZIONE: Il contratto recupererà dalla cache...`, 'cache');
+                            }
+                            
+                            const deviceIdHex = ethers.hexlify(ethers.toUtf8Bytes(dato.deviceId));
+                            const deviceIdBytes12 = ethers.zeroPadValue(deviceIdHex, 12);
+                            const tensioneTarget = Math.round(dato.tensione * 100);
+                            const armonicheTarget = [
+                                Math.round(dato.armoniche.armonica_3 * 100),
+                                Math.round(dato.armoniche.armonica_5 * 100),
+                                Math.round(dato.armoniche.armonica_7 * 100)
+                            ];
+                            const tx = await contrattoElaboratore.verificaGuastiArmoniche(
+                                deviceIdBytes12,
+                                dato.timestamp,
+                                tensioneTarget,
+                                armonicheTarget
+                            );
+                            const receipt = await tx.wait();
+                            
+                            const gasUsed = receipt.gasUsed;
+                            
+                            // Estrai risultato
+                            let resultMedia = null;
+                            for (const logEntry of receipt.logs) {
+                                try {
+                                    const parsed = contrattoElaboratore.interface.parseLog({ topics: logEntry.topics, data: logEntry.data });
+                                    if (parsed && parsed.args && parsed.args.risultatoMedia !== undefined) {
+                                        resultMedia = Number(parsed.args.risultatoMedia) / 100;
+                                    }
+                                } catch {}
+                            }
+                            if (!resultMedia && tensioniArray.length > 0) {
+                                const somma = tensioniArray.reduce((a, b) => a + b, 0);
+                                resultMedia = (somma / tensioniArray.length) / 100;
+                            }
+                            
+                            const resultFormatted = resultMedia.toFixed(6);
+                            document.getElementById('resultMediaAsync').textContent = `${resultFormatted} V`;
+                            document.getElementById('resultBoxAsync').style.display = 'block';
+                            
+                            // Check for AllarmeGuasto
+                            const allarmeLog = receipt.logs.map(l => {
+                                try { return contrattoElaboratore.interface.parseLog(l); } catch { return null; }
+                            }).find(p => p && p.name === 'AllarmeGuasto');
+                            if (!allarmeLog) {
+                                setFaultStatus(false);
+                            }
+
+                            document.getElementById('asyncStatusIcon').textContent = "✅";
+                            document.getElementById('asyncStatusText').textContent = "Auto-elaborazione completata.";
+                            
+                            if (isFromCache) {
+                                logMessage(`⚡ [ASYNC] Risultato da CACHE: ${resultFormatted}V (Gas: ${gasUsed})`, 'cache');
+                                if (firstCalcGasUsed) {
+                                    const firstGas = Number(firstCalcGasUsed);
+                                    const cacheGas = Number(gasUsed);
+                                    const savedPercent = ((firstGas - cacheGas) / firstGas * 100).toFixed(1);
+
+                                    document.getElementById('gasFirstAsync').textContent = firstCalcGasUsed.toString();
+                                    document.getElementById('gasCacheAsync').textContent = gasUsed.toString();
+                                    document.getElementById('gasSavedAsync').textContent = `~${savedPercent}%`;
+                                    document.getElementById('gasBarAsync').style.width = `${Math.min(savedPercent, 100)}%`;
+                                }
+                            } else {
+                                firstCalcGasUsed = gasUsed;
+                                hashElaborati.add(fileHash);
+                                logMessage(`✅ [ASYNC] Media calcolata on-chain: ${resultFormatted}V (Gas: ${gasUsed})`, 'success');
+
+                                document.getElementById('gasFirstAsync').textContent = gasUsed.toString();
+                                document.getElementById('gasCacheAsync').textContent = '—';
+                                document.getElementById('gasSavedAsync').textContent = 'In attesa del prossimo invio';
+                                document.getElementById('gasBarAsync').style.width = '0%';
+                            }
+                            
+                            setTimeout(() => {
+                                if (document.getElementById('checkAsyncMode').checked) {
+                                    document.getElementById('asyncStatusIcon').textContent = "⏳";
+                                    document.getElementById('asyncStatusText').textContent = "In attesa di nuovi dati certificati...";
+                                }
+                            }, 3000);
+                            
+                        } catch (error) {
+                            const reason = error.reason || error.message || String(error);
+                            logMessage(`❌ [ASYNC] Errore: ${reason}`, 'error');
+                            document.getElementById('asyncStatusIcon').textContent = "⚠️";
+                            document.getElementById('asyncStatusText').textContent = "Errore elaborazione asincrona.";
+                        }
+                    });
+
+                    // Abilita i bottoni
+                    document.getElementById('btnSimula').disabled = false;
+                    document.getElementById('btnElabora').disabled = false;
+                    document.getElementById('btnSetCooldown').disabled = false;
+
+                    // Leggi il cooldown attuale dal contratto
+                    try {
+                        const currentCooldown = await contrattoElaboratore.cooldownAllarme();
+                        document.getElementById('inputCooldown').value = Number(currentCooldown);
+                        document.getElementById('cooldownCurrentValue').textContent = `${Number(currentCooldown)} sec`;
+                    } catch { }
+
+                    logMessage('✅ MetaMask connesso. Contratti inizializzati.', 'success');
+                    logMessage(`   Certificatore: ${addressCertificatore}`, 'info');
+                    logMessage(`   Elaboratore:   ${addressElaboratore}`, 'info');
+                } catch (err) {
+                    logMessage(`❌ Errore connessione: ${err.message}`, 'error');
+                }
+            } else {
+                logMessage('❌ MetaMask non trovato. Installa l\'estensione.', 'error');
+            }
+        });
+
+
+        // GESTIONE UI TOGGLE ASINCRONO
+        document.getElementById('checkAsyncMode').addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            document.getElementById('asyncStatusIcon').textContent = isChecked ? "⏳" : "⏸️";
+            document.getElementById('asyncStatusText').textContent = isChecked ? "In attesa di nuovi dati certificati..." : "Auto-elaborazione disabilitata.";
+        });
+
+
+        //  GESTIONE COOLDOWN ALLARME
+
+        document.getElementById('btnSetCooldown').addEventListener('click', async () => {
+            if (!contrattoElaboratore) {
+                logMessage('❌ Connetti prima MetaMask.', 'error');
+                return;
+            }
+
+            const nuovoValore = parseInt(document.getElementById('inputCooldown').value, 10);
+            if (isNaN(nuovoValore) || nuovoValore < 0) {
+                logMessage('⚠️ Inserisci un valore valido (intero ≥ 0).', 'cache');
+                return;
+            }
+
+            try {
+                logMessage(`🔧 Invio setCooldownAllarme(${nuovoValore})...`, 'info');
+                const tx = await contrattoElaboratore.setCooldownAllarme(nuovoValore);
+                await tx.wait();
+                document.getElementById('cooldownCurrentValue').textContent = `${nuovoValore} sec`;
+                logMessage(`✅ Cooldown aggiornato a ${nuovoValore} secondi.`, 'success');
+            } catch (error) {
+                const reason = error.reason || error.message || String(error);
+                logMessage(`❌ Errore setCooldownAllarme: ${reason}`, 'error');
+            }
+        });
+
+
+        //  FASE 1: SIMULAZIONE + CERTIFICAZIONE
+        //  Oracle Pattern + Memoization Test
+
+
+        document.getElementById('btnSimula').addEventListener('click', async () => {
+            if (!contrattoCertificatore) {
+                logMessage('❌ Connetti prima MetaMask.', 'error');
+                return;
+            }
+
+            simulationCount++;
+            // Ogni 3 simulazioni → reinvia dati duplicati per testare la prevenzione
+            const isDuplicate = (simulationCount % 3 === 0) && lastGeneratedData !== null;
+
+            let data, fileHash;
+
+            if (isDuplicate) {
+                // ⚡ MEMOIZZAZIONE: riusa gli stessi dati
+                data = lastGeneratedData;
+                fileHash = lastFileHash;
+                logMessage('⚡ MEMOIZZAZIONE: Invio dati DUPLICATI per test cache...', 'cache');
+                logMessage(`   Hash duplicato: ${fileHash.substring(0, 18)}...`, 'cache');
+            } else {
+                // Genera nuovi dati randomici
+                // Legge lo stato della checkbox per decidere se forzare il guasto
+                const forzaGuasto = document.getElementById('checkForzaGuasto').checked;
+                // Genera nuovi dati passandogli la scelta
+                data = generaDatiMultimetro(forzaGuasto); fileHash = ethers.id(JSON.stringify(data));
+                // Salva per eventuale reinvio duplicato
+                lastGeneratedData = { ...data };
+                lastFileHash = fileHash;
+            }
+
+            // Aggiorna UI
+            renderJsonPreview(data);
+            updateMemoCounter(simulationCount, isDuplicate);
+
+            // Per evitare race condition con l'evento DatoCertificato (che parte in automatico in modalità asincrona),
+            // salviamo i dati nell'array LOCALE PRIMA di inviare la transazione.
+            if (!isDuplicate) {
+                const nuovoDato = {
+                    deviceId: data.deviceId,
+                    timestamp: data.timestamp,
+                    fileHash: fileHash,
+                    tensione: data.tensione,
+                    armoniche: data.armoniche
+                };
+                datiCertificati.push(nuovoDato);
+                
+                // Salva il dato off-chain nel DB via backend
+                fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nuovoDato)
+                }).catch(e => {
+                    logMessage('❌ Errore nel salvataggio off-chain su DB.', 'error');
+                });
+            }
+
+            try {
+                logMessage(`📡 Invio transazione certificazione...`, 'info');
+                logMessage(`   DeviceID: ${data.deviceId} | Tensione: ${data.tensione}V`, 'info');
+
+                // Moltiplica per 100 per gestire i decimali on-chain come interi
+                const tensioneInt = Math.round(data.tensione * 100);
+                const armonicheInt = [
+                    Math.round(data.armoniche.armonica_3 * 100),
+                    Math.round(data.armoniche.armonica_5 * 100),
+                    Math.round(data.armoniche.armonica_7 * 100)
+                ];
+
+                // Converti l'ID dispositivo ("48CA4339DA84") in bytes12
+                const deviceIdHex = ethers.hexlify(ethers.toUtf8Bytes(data.deviceId));
+                const deviceIdBytes12 = ethers.zeroPadValue(deviceIdHex, 12);
+
+                const tx = await contrattoCertificatore.certificaRilevazione(
+                    deviceIdBytes12,
+                    data.timestamp,
+                    fileHash
+                );
+                const receipt = await tx.wait();
+
+                // Cerca l'evento DatoCertificato nella ricevuta
+                const evento = receipt.logs.find(l => {
+                    try {
+                        return contrattoCertificatore.interface.parseLog(l)?.name === 'DatoCertificato';
+                    } catch { return false; }
+                });
+
+                if (evento) {
+                    logMessage(`✅ Dato certificato con successo!`, 'success');
+                    logMessage(`   Hash: ${fileHash.substring(0, 18)}...`, 'success');
+                    logMessage(`   Gas usato (Fase 1): ${receipt.gasUsed.toString()}`, 'success');
+                }
+
+            } catch (error) {
+                const reason = error.reason || error.message || String(error);
+                if (isDuplicate) {
+                    // Il contratto rifiuta i duplicati: questo CONFERMA la memoizzazione
+                    logMessage(`⚡ CONFERMATO: Il contratto ha rifiutato il duplicato!`, 'cache');
+                    logMessage(`   Motivo: "${reason}"`, 'cache');
+                    logMessage(`   → La memoizzazione on-chain funziona correttamente.`, 'cache');
+                } else {
+                    logMessage(`❌ Errore Fase 1: ${reason}`, 'error');
+                    // Se la tx fallisce, rimuoviamo l'elemento precedentemente salvato
+                    datiCertificati.pop();
+                }
+            }
+        });
+
+
+        //  FASE 2: ELABORAZIONE MEDIA TENSIONE
+        //  Memoization Pattern + Gas Tracking
+
+
+        document.getElementById('btnElabora').addEventListener('click', async () => {
+            if (!contrattoElaboratore) {
+                logMessage('❌ Connetti prima MetaMask.', 'error');
+                return;
+            }
+
+            if (datiCertificati.length === 0) {
+                logMessage('⚠️ Nessun dato certificato. Esegui prima la Fase 1.', 'cache');
+                return;
+            }
+
+            // Preparazione dati per elaborazione on-chain
+            const tensioniArray = datiCertificati.map(d => Math.round(d.tensione * 100));
+
+            logMessage(`📡 [SYNC] Invio richiesta elaborazione manuale...`, 'info');
+
+            // Usa l'ultimo hash certificato per l'elaborazione
+            const targetHash = datiCertificati[datiCertificati.length - 1].fileHash;
+
+            try {
+                // Determina se l'hash è già stato elaborato (tracking locale)
+                const isFromCache = hashElaborati.has(targetHash);
+
+                if (isFromCache) {
+                    logMessage(`⚡ [SYNC] MEMOIZZAZIONE: Hash già elaborato in precedenza...`, 'cache');
+                }
+
+                logMessage(`   Hash: ${targetHash.substring(0, 18)}...`, 'info');
+
+                const targetDato = datiCertificati[datiCertificati.length - 1];
+                const deviceIdHex = ethers.hexlify(ethers.toUtf8Bytes(targetDato.deviceId));
+                const deviceIdBytes12 = ethers.zeroPadValue(deviceIdHex, 12);
+                const tensioneTarget = Math.round(targetDato.tensione * 100);
+                const armonicheTarget = [
+                    Math.round(targetDato.armoniche.armonica_3 * 100),
+                    Math.round(targetDato.armoniche.armonica_5 * 100),
+                    Math.round(targetDato.armoniche.armonica_7 * 100)
+                ];
+                // 1. Calcola la media (e salva in cache)
+                const txMedia = await contrattoElaboratore.calcolaMediaTensione(
+                    targetHash,
+                    tensioniArray
+                );
+                const receiptMedia = await txMedia.wait();
+
+                // 2. Verifica le armoniche per l'allarme
+                const txGuasto = await contrattoElaboratore.verificaGuastiArmoniche(
+                    deviceIdBytes12,
+                    targetDato.timestamp,
+                    tensioneTarget,
+                    armonicheTarget
+                );
+                const receiptGuasto = await txGuasto.wait();
+
+                // Usiamo il gas della media per il confronto della memoizzazione
+                const gasUsed = receiptMedia.gasUsed;
+                const gasCompareEl = document.getElementById('gasCompare');
+
+                // Estraiamo il risultato emesso dall'evento
+                let resultMedia = null;
+                for (const logEntry of receiptMedia.logs) {
+                    try {
+                        const parsed = contrattoElaboratore.interface.parseLog({
+                            topics: logEntry.topics,
+                            data: logEntry.data
+                        });
+                        if (parsed && parsed.args && parsed.args.risultatoMedia !== undefined) {
+                            resultMedia = Number(parsed.args.risultatoMedia) / 100;
+                        }
+                    } catch { }
+                }
+
+                if (!resultMedia && tensioniArray.length > 0) {
+                    // Fallback solo se l'evento non viene letto
+                    const somma = tensioniArray.reduce((a, b) => a + b, 0);
+                    resultMedia = (somma / tensioniArray.length) / 100;
+                }
+
+                const resultFormatted = resultMedia.toFixed(6);
+
+                // Mostra il risultato nella UI SINCRONA
+                document.getElementById('resultMediaSync').textContent = `${resultFormatted} V`;
+                document.getElementById('resultBoxSync').style.display = 'block';
+
+                // Check for AllarmeGuasto sui log della verifica guasto
+                const allarmeLog = receiptGuasto.logs.map(l => {
+                    try { return contrattoElaboratore.interface.parseLog(l); } catch { return null; }
+                }).find(p => p && p.name === 'AllarmeGuasto');
+                if (!allarmeLog) {
+                    setFaultStatus(false);
+                }
+
+                if (isFromCache) {
+                    // ⚡ CACHE HIT — il contratto ha emesso RisultatoRecuperatoDallaCache
+                    logMessage(`⚡ [SYNC] Risultato recuperato dalla CACHE on-chain!`, 'cache');
+                    logMessage(`   Valore media: ${resultFormatted}V`, 'cache');
+                    logMessage(`   ⛽ Gas usato (da cache): ${gasUsed.toString()}`, 'cache');
+
+                    if (firstCalcGasUsed) {
+                        const firstGas = Number(firstCalcGasUsed);
+                        const cacheGas = Number(gasUsed);
+                        const savedPercent = ((firstGas - cacheGas) / firstGas * 100).toFixed(1);
+
+                        logMessage(`   💰 Gas primo calcolo: ${firstGas} → Cache: ${cacheGas}`, 'cache');
+                        logMessage(`   🎯 RISPARMIO GAS: ~${savedPercent}%`, 'cache');
+
+                        // Aggiorna widget gas Sync
+                        document.getElementById('gasFirstSync').textContent = firstCalcGasUsed.toString();
+                        document.getElementById('gasCacheSync').textContent = gasUsed.toString();
+                        document.getElementById('gasSavedSync').textContent = `~${savedPercent}%`;
+                        document.getElementById('gasBarSync').style.width = `${Math.min(savedPercent, 100)}%`;
+                    } else {
+                        logMessage(`   ℹ️ Nessun calcolo precedente per confronto gas.`, 'info');
+                    }
+                } else {
+                    // ✅ PRIMO CALCOLO — il contratto ha emesso CalcoloEseguito
+                    firstCalcGasUsed = gasUsed;
+                    // Registra l'hash come elaborato per i prossimi click
+                    hashElaborati.add(targetHash);
+
+                    logMessage(`✅ [SYNC] Media elaborata on-chain con successo!`, 'success');
+                    logMessage(`   Valore media: ${resultFormatted}V`, 'success');
+                    logMessage(`   ⛽ Gas usato (nuovo calcolo): ${gasUsed.toString()}`, 'success');
+                    logMessage(`   → Clicca di nuovo "Calcola Media" per vedere il risparmio gas dalla cache.`, 'info');
+
+                    // Aggiorna widget gas Sync
+                    document.getElementById('gasFirstSync').textContent = gasUsed.toString();
+                    document.getElementById('gasCacheSync').textContent = '—';
+                    document.getElementById('gasSavedSync').textContent = 'Invoca di nuovo per confrontare';
+                    document.getElementById('gasBarSync').style.width = '0%';
+                }
+
+            } catch (error) {
+                const reason = error.reason || error.message || String(error);
+                logMessage(`❌ [SYNC] Errore Fase 2: ${reason}`, 'error');
+            }
+        });
+    </script>
+</body>
+
+</html>
