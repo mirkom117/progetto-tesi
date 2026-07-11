@@ -1,67 +1,67 @@
-# Sample Hardhat 3 Beta Project (`mocha` and `ethers`)
+# Progetto d'Esempio Hardhat 3 Beta (`mocha` ed `ethers`)
 
-This project showcases a Hardhat 3 Beta project using `mocha` for tests and the `ethers` library for Ethereum interactions.
+Questo progetto mostra un progetto Hardhat 3 Beta che utilizza `mocha` per i test e la libreria `ethers` per le interazioni con Ethereum.
 
-To learn more about the Hardhat 3 Beta, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+Per saperne di più su Hardhat 3 Beta, visita la [Guida Introduttiva](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). Per condividere il tuo feedback, unisciti al nostro gruppo Telegram [Hardhat 3 Beta](https://hardhat.org/hardhat3-beta-telegram-group) o [apri una issue](https://github.com/NomicFoundation/hardhat/issues/new) nel nostro tracker su GitHub.
 
-## Project Overview
+## Panoramica del Progetto
 
-This example project includes:
+Questo progetto di esempio include:
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using `mocha` and ethers.js
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
-- **Express Backend & MongoDB**: A Node.js backend (`backend/server.js`) connected to MongoDB to store off-chain data securely and persistently.
+- Un semplice file di configurazione di Hardhat.
+- Test unitari in Solidity compatibili con Foundry.
+- Test di integrazione in TypeScript utilizzando `mocha` ed ethers.js.
+- Esempi che dimostrano come connettersi a diversi tipi di reti, inclusa la simulazione locale della mainnet di OP.
+- **Backend Express & MongoDB**: Un backend Node.js (`backend/server.js`) connesso a MongoDB per archiviare dati off-chain in modo sicuro e persistente.
 
-## Usage
+## Utilizzo
 
-### Running the Backend
+### Avviare il Backend
 
-To run the backend server which handles off-chain data storage:
-1. Ensure you have MongoDB running locally (or update `.env` with your cluster connection string).
-2. Start the server:
+Per avviare il server backend che gestisce l'archiviazione dei dati off-chain:
+1. Assicurati di avere MongoDB in esecuzione localmente (o aggiorna il file `.env` con la stringa di connessione del tuo cluster).
+2. Avvia il server:
 ```shell
 npm run start:backend
 ```
-The backend will run on `http://localhost:3000`.
+Il backend sarà in esecuzione su `http://localhost:3000`.
 
-### Running Tests
+### Eseguire i Test
 
-To run all the tests in the project, execute the following command:
+Per eseguire tutti i test del progetto, esegui il seguente comando:
 
 ```shell
 npx hardhat test
 ```
 
-You can also selectively run the Solidity or `mocha` tests:
+Puoi anche eseguire selettivamente i test Solidity o `mocha`:
 
 ```shell
 npx hardhat test solidity
 npx hardhat test mocha
 ```
 
-### Make a deployment to Sepolia
+### Effettuare un deployment su Sepolia
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
+Questo progetto include un modulo Ignition di esempio per effettuare il deployment del contratto. Puoi distribuire questo modulo su una chain simulata localmente o su Sepolia.
 
-To run the deployment to a local chain:
+Per eseguire il deployment su una chain locale:
 
 ```shell
 npx hardhat ignition deploy ignition/modules/Counter.ts
 ```
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+Per eseguire il deployment su Sepolia, hai bisogno di un account con dei fondi per inviare la transazione. La configurazione di Hardhat fornita include una variabile di configurazione chiamata `SEPOLIA_PRIVATE_KEY`, che puoi usare per impostare la chiave privata dell'account che desideri utilizzare.
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
+Puoi impostare la variabile `SEPOLIA_PRIVATE_KEY` usando il plugin `hardhat-keystore` o impostandola come variabile d'ambiente.
 
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
+Per impostare la variabile di configurazione `SEPOLIA_PRIVATE_KEY` usando `hardhat-keystore`:
 
 ```shell
 npx hardhat keystore set SEPOLIA_PRIVATE_KEY
 ```
 
-After setting the variable, you can run the deployment with the Sepolia network:
+Dopo aver impostato la variabile, puoi avviare il deployment sulla rete Sepolia:
 
 ```shell
 npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
